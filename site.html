@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Engineer Accelerator | 20-Day Roadmap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            margin: 0 auto;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .check-animation {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+    <!-- Chosen Palette: Slate (Backgrounds/Text) + Indigo (Primary/Action) + Emerald (Success) + Amber (Warning/Focus) -->
+    <!-- Application Structure Plan: 
+         1. Header: Global progress and Start Date configuration.
+         2. Dashboard Grid: 
+            - Left: Navigation/Timeline (The 4 Weeks).
+            - Center: Active Day Detail (Tasks, Resources, Context).
+            - Right: Analytics (Skill Radar, Progress Donut).
+         3. Logic: Users set a start date. The app calculates specific deadlines for each 'Day' (Day 1 to 20).
+         4. Interaction: Clicking tasks updates the 'Skill Matrix' in real-time.
+    -->
+    <!-- Visualization & Content Choices:
+         1. Radar Chart: Visualizes the 5 core domains from the PDF (IaC, CI/CD, Containers, Security, Observability). 
+            Goal: Show balanced growth. 
+            Interaction: Updates as tasks are checked.
+         2. Donut Chart: Overall schedule completion.
+         3. Timeline/Accordion: Breaks down the 20 days into digestible 5-day sprints (Weeks).
+         4. NO SVG/Mermaid: All icons are Unicode or CSS shapes. Charts are Canvas (Chart.js).
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">C</div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-900">Cloud Engineer <span class="text-indigo-600">Accelerator</span></h1>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="hidden md:flex items-center gap-2 text-sm text-slate-600">
+                    <span>Start Date:</span>
+                    <input type="date" id="startDateInput" class="border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-slate-500 uppercase font-semibold">Timeline</div>
+                    <div class="text-sm font-bold text-slate-900">20 Days / 4 Weeks</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- LEFT COLUMN: Navigation / Timeline (4 cols) -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Introduction / Context -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-lg font-bold text-slate-900 mb-2">Program Overview</h2>
+                <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                    This interactive roadmap compresses the "Alkis Skills Roadmap" into a high-intensity <strong>20-day sprint</strong>. 
+                    It covers IaC, CI/CD, Containers, Security, and Observability.
+                </p>
+                <div class="flex items-center justify-between text-xs font-medium text-slate-500 bg-slate-100 p-2 rounded">
+                    <span>STATUS: <span id="programStatus" class="text-indigo-600">NOT STARTED</span></span>
+                    <span>DEADLINE: <span id="finalDeadline">--</span></span>
+                </div>
+            </div>
+
+            <!-- Week Selectors -->
+            <div class="space-y-4" id="weekContainer">
+                <!-- Weeks generated by JS -->
+            </div>
+        </div>
+
+        <!-- CENTER COLUMN: Active Day Detail (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            <!-- Day Detail Card -->
+            <div id="dayDetailPanel" class="bg-white rounded-xl shadow-lg border border-indigo-100 overflow-hidden flex flex-col h-full relative">
+                <!-- Header -->
+                <div class="bg-indigo-600 p-6 text-white relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl font-bold">#<span id="dayNumberDisplay">1</span></div>
+                    <div class="relative z-10">
+                        <span class="inline-block px-2 py-1 bg-indigo-500/50 rounded text-xs font-semibold mb-2" id="dayPhaseDisplay">PHASE 1: FOUNDATION</span>
+                        <h2 class="text-2xl font-bold mb-1" id="dayTitleDisplay">Loading...</h2>
+                        <p class="text-indigo-100 text-sm" id="daySubtitleDisplay">Select a day to begin</p>
+                    </div>
+                </div>
+
+                <!-- Content Scroll Area -->
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-grow" style="max-height: 60vh;">
+                    
+                    <!-- Goal Section -->
+                    <div class="mb-6">
+                        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <span>🎯</span> Daily Objective
+                        </h3>
+                        <p class="text-slate-600 text-sm leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100" id="dayObjective">
+                            Select a day from the left sidebar to view its details.
+                        </p>
+                    </div>
+
+                    <!-- Tasks Section -->
+                    <div class="mb-6">
+                        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <span>✅</span> Key Tasks
+                        </h3>
+                        <div class="space-y-3" id="taskList">
+                            <!-- Tasks injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Resources Section -->
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <span>📚</span> Learning Resources
+                        </h3>
+                        <div class="grid grid-cols-1 gap-2" id="resourceList">
+                            <!-- Resources injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer / Navigation -->
+                <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                    <button id="prevDayBtn" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 disabled:opacity-50">← Prev Day</button>
+                    <span class="text-xs font-bold text-slate-400" id="dateDisplay">--/--/----</span>
+                    <button id="nextDayBtn" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 disabled:opacity-50">Next Day →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Analytics & Stats (3 cols) -->
+        <div class="lg:col-span-3 flex flex-col gap-6">
+            
+            <!-- Overall Progress -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="text-sm font-bold text-slate-900 mb-4 text-center">Completion Rate</h3>
+                <div class="chart-container" style="height: 180px;">
+                    <canvas id="progressChart"></canvas>
+                </div>
+                <div class="text-center mt-2">
+                    <span class="text-3xl font-bold text-slate-800" id="percentDisplay">0%</span>
+                    <span class="text-xs text-slate-500 block">of roadmap completed</span>
+                </div>
+            </div>
+
+            <!-- Skill Matrix -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex-grow">
+                <h3 class="text-sm font-bold text-slate-900 mb-4 text-center">Skill Acquisition</h3>
+                <p class="text-xs text-slate-500 text-center mb-4">Real-time growth based on completed tasks.</p>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="skillRadarChart"></canvas>
+                </div>
+                <!-- Legend -->
+                <div class="mt-6 space-y-2 text-xs text-slate-600">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span> <span>Current Skill Level</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-slate-300"></span> <span>Target Level (Mastery)</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-sm">
+            <p>Generated based on "Alkis Skills Roadmap.pdf".</p>
+            <p class="mt-2 text-slate-600">The roadmap assumes 5 working days per week for 4 weeks.</p>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- DATA STORE ---
+        // Based on the PDF content, mapped to 4 weeks (20 days)
+        
+        const phases = [
+            { id: 1, title: "Week 1: IaC & CI/CD Foundation", focus: "Terraform & GitHub Actions" },
+            { id: 2, title: "Week 2: Container Orchestration", focus: "Docker & Kubernetes" },
+            { id: 3, title: "Week 3: Security & Networking", focus: "IAM, VPC & Secrets" },
+            { id: 4, title: "Week 4: Observability & Hardening", focus: "Monitoring & Testing" }
+        ];
+
+        const daysData = [
+            // WEEK 1
+            {
+                day: 1, phaseId: 1, title: "Terraform Core Concepts",
+                objective: "Understand Declarative vs Imperative IaC and set up your local environment.",
+                tasks: [
+                    { id: "t1-1", text: "Install Terraform & AWS CLI", skill: "IaC" },
+                    { id: "t1-2", text: "Learn State Management (Local vs Remote)", skill: "IaC" },
+                    { id: "t1-3", text: "Create first main.tf (EC2 instance)", skill: "IaC" },
+                    { id: "t1-4", text: "Understand `terraform plan` vs `apply`", skill: "IaC" }
+                ],
+                resources: [
+                    { title: "HashiCorp: Terraform Basics", url: "https://developer.hashicorp.com/terraform/intro" },
+                    { title: "AWS: Configure CLI", url: "https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html" }
+                ]
+            },
+            {
+                day: 2, phaseId: 1, title: "Modules & Providers",
+                objective: "Learn to write reusable code using Modules and manage AWS resources.",
+                tasks: [
+                    { id: "t2-1", text: "Refactor Day 1 code into a Module", skill: "IaC" },
+                    { id: "t2-2", text: "Explore Terraform Registry", skill: "IaC" },
+                    { id: "t2-3", text: "Configure AWS Provider constraints", skill: "IaC" }
+                ],
+                resources: [
+                    { title: "Terraform Modules", url: "https://developer.hashicorp.com/terraform/language/modules" }
+                ]
+            },
+            {
+                day: 3, phaseId: 1, title: "CI/CD Concepts & GitHub Actions",
+                objective: "Introduction to pipelines. Moving from manual ops to automated ops.",
+                tasks: [
+                    { id: "t3-1", text: "Create a GitHub Repo for your IaC", skill: "CICD" },
+                    { id: "t3-2", text: "Create a basic GitHub Actions workflow (.yml)", skill: "CICD" },
+                    { id: "t3-3", text: "Implement a Linter (tflint) in CI", skill: "CICD" }
+                ],
+                resources: [
+                    { title: "GitHub Actions Quickstart", url: "https://docs.github.com/en/actions/quickstart" }
+                ]
+            },
+            {
+                day: 4, phaseId: 1, title: "Automating Infrastructure",
+                objective: "Connect Terraform with GitHub Actions for automated deployment.",
+                tasks: [
+                    { id: "t4-1", text: "Configure AWS Credentials in GitHub Secrets", skill: "Security" },
+                    { id: "t4-2", text: "Create 'Plan' workflow (on PR)", skill: "CICD" },
+                    { id: "t4-3", text: "Create 'Apply' workflow (on Merge)", skill: "CICD" }
+                ],
+                resources: [
+                    { title: "Automate Terraform with GitHub Actions", url: "https://developer.hashicorp.com/terraform/tutorials/automation/github-actions" }
+                ]
+            },
+            {
+                day: 5, phaseId: 1, title: "Week 1 Project: Multi-Env API",
+                objective: "Deploy a simple architecture to two environments (Staging/Prod) using Workspaces.",
+                tasks: [
+                    { id: "t5-1", text: "Implement Terraform Workspaces", skill: "IaC" },
+                    { id: "t5-2", text: "Deploy API Gateway + Lambda (Hello World)", skill: "IaC" },
+                    { id: "t5-3", text: "Verify drift detection logic", skill: "CICD" }
+                ],
+                resources: [
+                    { title: "Terraform Workspaces", url: "https://developer.hashicorp.com/terraform/language/state/workspaces" }
+                ]
+            },
+            // WEEK 2
+            {
+                day: 6, phaseId: 2, title: "Docker Fundamentals",
+                objective: "Containerize applications for consistent runtime environments.",
+                tasks: [
+                    { id: "t6-1", text: "Write a Dockerfile (Multi-stage build)", skill: "Containers" },
+                    { id: "t6-2", text: "Build and Run image locally", skill: "Containers" },
+                    { id: "t6-3", text: "Push image to ECR (Elastic Container Registry)", skill: "Containers" }
+                ],
+                resources: [
+                    { title: "Docker Curriculum", url: "https://docker-curriculum.com/" }
+                ]
+            },
+            {
+                day: 7, phaseId: 2, title: "Kubernetes Architecture",
+                objective: "Understand the control plane, nodes, pods, and services.",
+                tasks: [
+                    { id: "t7-1", text: "Install kubectl & minikube/kind", skill: "Containers" },
+                    { id: "t7-2", text: "Deploy Nginx Pod manually", skill: "Containers" },
+                    { id: "t7-3", text: "Expose Pod via Service (ClusterIP/NodePort)", skill: "Containers" }
+                ],
+                resources: [
+                    { title: "K8s Basics", url: "https://kubernetes.io/docs/tutorials/kubernetes-basics/" }
+                ]
+            },
+            {
+                day: 8, phaseId: 2, title: "K8s Manifests & Helm",
+                objective: "Manage K8s resources declaratively and package them.",
+                tasks: [
+                    { id: "t8-1", text: "Write Deployment & Service YAMLs", skill: "Containers" },
+                    { id: "t8-2", text: "Create a basic Helm Chart", skill: "Containers" },
+                    { id: "t8-3", text: "Install Chart with values.yaml override", skill: "Containers" }
+                ],
+                resources: [
+                    { title: "Helm Quickstart", url: "https://helm.sh/docs/intro/quickstart/" }
+                ]
+            },
+            {
+                day: 9, phaseId: 2, title: "Infrastructure for K8s (EKS)",
+                objective: "Provision a managed Kubernetes cluster using Terraform.",
+                tasks: [
+                    { id: "t9-1", text: "Use Terraform EKS Module", skill: "IaC" },
+                    { id: "t9-2", text: "Provision VPC for EKS", skill: "Networking" },
+                    { id: "t9-3", text: "Connect kubectl to remote EKS", skill: "Containers" }
+                ],
+                resources: [
+                    { title: "AWS EKS with Terraform", url: "https://developer.hashicorp.com/terraform/tutorials/kubernetes/eks" }
+                ]
+            },
+            {
+                day: 10, phaseId: 2, title: "Week 2 Project: App on EKS",
+                objective: "Deploy a containerized app to your new EKS cluster via Helm.",
+                tasks: [
+                    { id: "t10-1", text: "Update CI/CD to build Docker image", skill: "CICD" },
+                    { id: "t10-2", text: "Add Helm Deploy step to Pipeline", skill: "Containers" },
+                    { id: "t10-3", text: "Verify App health & Logs", skill: "Observability" }
+                ],
+                resources: [
+                    { title: "EKS Workshop", url: "https://www.eksworkshop.com/" }
+                ]
+            },
+            // WEEK 3
+            {
+                day: 11, phaseId: 3, title: "VPC & Networking Deep Dive",
+                objective: "Network isolation is the first line of defense.",
+                tasks: [
+                    { id: "t11-1", text: "Design VPC with Public/Private Subnets", skill: "Networking" },
+                    { id: "t11-2", text: "Configure NAT Gateway & Route Tables", skill: "Networking" },
+                    { id: "t11-3", text: "Test connectivity between subnets", skill: "Networking" }
+                ],
+                resources: [
+                    { title: "AWS VPC Scenarios", url: "https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Scenarios.html" }
+                ]
+            },
+            {
+                day: 12, phaseId: 3, title: "IAM & Least Privilege",
+                objective: "Secure access control for users and services.",
+                tasks: [
+                    { id: "t12-1", text: "Audit existing IAM Roles", skill: "Security" },
+                    { id: "t12-2", text: "Create Service Accounts for K8s (IRSA)", skill: "Security" },
+                    { id: "t12-3", text: "Implement Least Privilege Policy", skill: "Security" }
+                ],
+                resources: [
+                    { title: "IAM Best Practices", url: "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html" }
+                ]
+            },
+            {
+                day: 13, phaseId: 3, title: "Secrets Management",
+                objective: "Never hardcode secrets. Use managed services.",
+                tasks: [
+                    { id: "t13-1", text: "Setup AWS Secrets Manager", skill: "Security" },
+                    { id: "t13-2", text: "Inject secrets into Lambda/EKS via env vars", skill: "Security" },
+                    { id: "t13-3", text: "Rotate a secret automatically", skill: "Security" }
+                ],
+                resources: [
+                    { title: "AWS Secrets Manager", url: "https://aws.amazon.com/secrets-manager/" }
+                ]
+            },
+            {
+                day: 14, phaseId: 3, title: "Network Security",
+                objective: "Firewalls and boundaries.",
+                tasks: [
+                    { id: "t14-1", text: "Tighten Security Groups (Ingress/Egress)", skill: "Networking" },
+                    { id: "t14-2", text: "Setup VPC Endpoints (PrivateLink)", skill: "Networking" },
+                    { id: "t14-3", text: "Review NACLs", skill: "Networking" }
+                ],
+                resources: [
+                    { title: "Security Groups vs NACLs", url: "https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Security.html" }
+                ]
+            },
+            {
+                day: 15, phaseId: 3, title: "Week 3 Project: Hardening",
+                objective: "Refactor infrastructure to be secure by default.",
+                tasks: [
+                    { id: "t15-1", text: "Run tfsec on Terraform code", skill: "Security" },
+                    { id: "t15-2", text: "Fix critical security vulnerabilities", skill: "Security" },
+                    { id: "t15-3", text: "Ensure Encryption at Rest (KMS)", skill: "Security" }
+                ],
+                resources: [
+                    { title: "tfsec Documentation", url: "https://aquasecurity.github.io/tfsec/" }
+                ]
+            },
+            // WEEK 4
+            {
+                day: 16, phaseId: 4, title: "Structured Logging",
+                objective: "Make logs searchable and machine-readable.",
+                tasks: [
+                    { id: "t16-1", text: "Configure App to output JSON logs", skill: "Observability" },
+                    { id: "t16-2", text: "Add Correlation IDs to requests", skill: "Observability" },
+                    { id: "t16-3", text: "Query logs in CloudWatch Insights", skill: "Observability" }
+                ],
+                resources: [
+                    { title: "CloudWatch Insights", url: "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AnalyzingLogData.html" }
+                ]
+            },
+            {
+                day: 17, phaseId: 4, title: "Metrics & Dashboards",
+                objective: "Visualize system health.",
+                tasks: [
+                    { id: "t17-1", text: "Define Key Business Metrics", skill: "Observability" },
+                    { id: "t17-2", text: "Create CloudWatch Dashboard", skill: "Observability" },
+                    { id: "t17-3", text: "Set up CloudWatch Alarms (SNS notification)", skill: "Observability" }
+                ],
+                resources: [
+                    { title: "Amazon CloudWatch Dashboards", url: "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Dashboards.html" }
+                ]
+            },
+            {
+                day: 18, phaseId: 4, title: "Tracing & Debugging",
+                objective: "Trace requests across microservices.",
+                tasks: [
+                    { id: "t18-1", text: "Instrument App with AWS X-Ray / OpenTelemetry", skill: "Observability" },
+                    { id: "t18-2", text: "Analyze Service Map", skill: "Observability" },
+                    { id: "t18-3", text: "Identify latency bottlenecks", skill: "Observability" }
+                ],
+                resources: [
+                    { title: "AWS X-Ray", url: "https://aws.amazon.com/xray/" }
+                ]
+            },
+            {
+                day: 19, phaseId: 4, title: "Infrastructure Testing",
+                objective: "Treat infrastructure code like application code.",
+                tasks: [
+                    { id: "t19-1", text: "Write a Terratest case", skill: "IaC" },
+                    { id: "t19-2", text: "Implement Pre-commit hooks", skill: "CICD" },
+                    { id: "t19-3", text: "Run integration tests in Ephemeral Env", skill: "CICD" }
+                ],
+                resources: [
+                    { title: "Terratest Library", url: "https://terratest.gruntwork.io/" }
+                ]
+            },
+            {
+                day: 20, phaseId: 4, title: "Final Review & Documentation",
+                objective: "Ensure the system is maintainable and documented.",
+                tasks: [
+                    { id: "t20-1", text: "Generate Architecture Diagram", skill: "Observability" },
+                    { id: "t20-2", text: "Write 'Runbooks' for common incidents", skill: "Observability" },
+                    { id: "t20-3", text: "Final Project Demo", skill: "Observability" }
+                ],
+                resources: [
+                    { title: "Writing Runbooks", url: "https://wa.aws.amazon.com/wat.concept.runbook.en.html" }
+                ]
+            }
+        ];
+
+        // --- STATE MANAGEMENT ---
+        let currentState = {
+            activeDay: 1,
+            completedTasks: new Set(),
+            startDate: new Date().toISOString().split('T')[0]
+        };
+
+        // --- DOM ELEMENTS ---
+        const startDateInput = document.getElementById('startDateInput');
+        const weekContainer = document.getElementById('weekContainer');
+        const dayTitleDisplay = document.getElementById('dayTitleDisplay');
+        const daySubtitleDisplay = document.getElementById('daySubtitleDisplay');
+        const dayPhaseDisplay = document.getElementById('dayPhaseDisplay');
+        const dayNumberDisplay = document.getElementById('dayNumberDisplay');
+        const dayObjective = document.getElementById('dayObjective');
+        const taskList = document.getElementById('taskList');
+        const resourceList = document.getElementById('resourceList');
+        const percentDisplay = document.getElementById('percentDisplay');
+        const dateDisplay = document.getElementById('dateDisplay');
+        const programStatus = document.getElementById('programStatus');
+        const finalDeadline = document.getElementById('finalDeadline');
+        const prevDayBtn = document.getElementById('prevDayBtn');
+        const nextDayBtn = document.getElementById('nextDayBtn');
+
+        // --- CHARTS INSTANCES ---
+        let radarChart = null;
+        let donutChart = null;
+
+        // --- INITIALIZATION ---
+        function init() {
+            // Set initial date input
+            startDateInput.value = currentState.startDate;
+            
+            // Render Weeks and Days Sidebar
+            renderSidebar();
+            
+            // Render First Day
+            renderDayDetail(1);
+            
+            // Init Charts
+            initCharts();
+            
+            // Listeners
+            startDateInput.addEventListener('change', (e) => {
+                currentState.startDate = e.target.value;
+                renderDayDetail(currentState.activeDay); // Re-render to update date string
+                updateStatusHeader();
+            });
+
+            prevDayBtn.addEventListener('click', () => {
+                if (currentState.activeDay > 1) renderDayDetail(currentState.activeDay - 1);
+            });
+            nextDayBtn.addEventListener('click', () => {
+                if (currentState.activeDay < 20) renderDayDetail(currentState.activeDay + 1);
+            });
+
+            updateStatusHeader();
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderSidebar() {
+            weekContainer.innerHTML = '';
+            
+            phases.forEach(phase => {
+                const weekDiv = document.createElement('div');
+                weekDiv.className = "border-l-2 border-slate-200 pl-4 pb-2";
+                
+                // Week Header
+                const header = document.createElement('div');
+                header.className = "mb-2";
+                header.innerHTML = `
+                    <h3 class="text-sm font-bold text-slate-800">${phase.title}</h3>
+                    <p class="text-xs text-slate-500">${phase.focus}</p>
+                `;
+                weekDiv.appendChild(header);
+
+                // Days Grid
+                const daysGrid = document.createElement('div');
+                daysGrid.className = "grid grid-cols-5 gap-2";
+                
+                // Get days for this phase
+                const phaseDays = daysData.filter(d => d.phaseId === phase.id);
+                
+                phaseDays.forEach(day => {
+                    const btn = document.createElement('button');
+                    btn.className = `
+                        w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200
+                        ${isDayComplete(day.day) ? 'bg-emerald-100 text-emerald-700 ring-2 ring-emerald-500/20' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}
+                        ${currentState.activeDay === day.day ? 'ring-2 ring-indigo-600 ring-offset-2 !bg-indigo-600 !text-white' : ''}
+                    `;
+                    btn.innerText = day.day;
+                    btn.onclick = () => renderDayDetail(day.day);
+                    daysGrid.appendChild(btn);
+                });
+
+                weekDiv.appendChild(daysGrid);
+                weekContainer.appendChild(weekDiv);
+            });
+        }
+
+        function renderDayDetail(dayNum) {
+            currentState.activeDay = dayNum;
+            const data = daysData.find(d => d.day === dayNum);
+            
+            // Update Text
+            dayTitleDisplay.innerText = data.title;
+            dayPhaseDisplay.innerText = phases.find(p => p.id === data.phaseId).title.toUpperCase();
+            dayNumberDisplay.innerText = data.day;
+            daySubtitleDisplay.innerText = `Week ${Math.ceil(dayNum/5)} • Day ${dayNum % 5 === 0 ? 5 : dayNum % 5}`;
+            dayObjective.innerText = data.objective;
+
+            // Update Date Calculation
+            const start = new Date(currentState.startDate);
+            // Add working days logic (simple approximation: dayNum + weekends)
+            // Real logic: simply add (dayNum - 1) days to start date for now
+            const targetDate = new Date(start);
+            targetDate.setDate(start.getDate() + (dayNum - 1));
+            
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            dateDisplay.innerText = targetDate.toLocaleDateString('en-US', options);
+
+            // Update Tasks
+            taskList.innerHTML = '';
+            data.tasks.forEach(task => {
+                const row = document.createElement('div');
+                row.className = "flex items-start gap-3 p-2 hover:bg-slate-50 rounded transition-colors";
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = "checkbox";
+                checkbox.className = "mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer";
+                checkbox.checked = currentState.completedTasks.has(task.id);
+                checkbox.onchange = (e) => toggleTask(task.id, e.target.checked);
+                
+                const label = document.createElement('label');
+                label.className = "text-sm text-slate-700 cursor-pointer select-none";
+                label.innerText = task.text;
+                label.onclick = () => { checkbox.checked = !checkbox.checked; toggleTask(task.id, checkbox.checked); };
+                
+                const tag = document.createElement('span');
+                tag.className = "ml-auto text-[10px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase";
+                tag.innerText = task.skill;
+
+                row.appendChild(checkbox);
+                row.appendChild(label);
+                row.appendChild(tag);
+                taskList.appendChild(row);
+            });
+
+            // Update Resources
+            resourceList.innerHTML = '';
+            data.resources.forEach(res => {
+                const link = document.createElement('a');
+                link.href = res.url;
+                link.target = "_blank";
+                link.className = "block p-3 border border-slate-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all group";
+                link.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-slate-700 group-hover:text-indigo-700">${res.title}</span>
+                        <span class="text-slate-400 group-hover:text-indigo-500">↗</span>
+                    </div>
+                `;
+                resourceList.appendChild(link);
+            });
+
+            // Update Nav Buttons
+            prevDayBtn.disabled = dayNum === 1;
+            nextDayBtn.disabled = dayNum === 20;
+
+            // Re-render sidebar to update active state highlight
+            renderSidebar();
+        }
+
+        // --- LOGIC HELPER ---
+        function toggleTask(taskId, isChecked) {
+            if (isChecked) {
+                currentState.completedTasks.add(taskId);
+            } else {
+                currentState.completedTasks.delete(taskId);
+            }
+            updateStats();
+        }
+
+        function isDayComplete(dayNum) {
+            const data = daysData.find(d => d.day === dayNum);
+            return data.tasks.every(t => currentState.completedTasks.has(t.id));
+        }
+
+        function updateStatusHeader() {
+            const start = new Date(currentState.startDate);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 27); // 20 working days ~ 28 cal days
+            
+            finalDeadline.innerText = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            
+            const now = new Date();
+            if (now < start) programStatus.innerText = "UPCOMING";
+            else if (now > end) programStatus.innerText = "OVERDUE";
+            else programStatus.innerText = "IN PROGRESS";
+        }
+
+        // --- CHARTS LOGIC ---
+        function updateStats() {
+            // 1. Update Progress Donut
+            const totalTasks = daysData.reduce((acc, day) => acc + day.tasks.length, 0);
+            const doneTasks = currentState.completedTasks.size;
+            const percent = Math.round((doneTasks / totalTasks) * 100);
+            
+            percentDisplay.innerText = `${percent}%`;
+            
+            donutChart.data.datasets[0].data = [doneTasks, totalTasks - doneTasks];
+            donutChart.update();
+
+            // 2. Update Skill Radar
+            // Skills: IaC, CICD, Containers, Security, Networking, Observability
+            const skills = {
+                "IaC": { total: 0, done: 0 },
+                "CICD": { total: 0, done: 0 },
+                "Containers": { total: 0, done: 0 },
+                "Security": { total: 0, done: 0 },
+                "Networking": { total: 0, done: 0 },
+                "Observability": { total: 0, done: 0 }
+            };
+
+            daysData.forEach(day => {
+                day.tasks.forEach(task => {
+                    if (skills[task.skill]) {
+                        skills[task.skill].total++;
+                        if (currentState.completedTasks.has(task.id)) {
+                            skills[task.skill].done++;
+                        }
+                    }
+                });
+            });
+
+            const skillValues = Object.keys(skills).map(key => {
+                if (skills[key].total === 0) return 0;
+                return (skills[key].done / skills[key].total) * 100;
+            });
+
+            radarChart.data.datasets[0].data = skillValues;
+            radarChart.update();
+            
+            // Re-render sidebar to show checkmarks
+            renderSidebar();
+        }
+
+        function initCharts() {
+            // Donut
+            const ctxDonut = document.getElementById('progressChart').getContext('2d');
+            donutChart = new Chart(ctxDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Remaining'],
+                    datasets: [{
+                        data: [0, 100],
+                        backgroundColor: ['#4f46e5', '#e2e8f0'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: '75%'
+                }
+            });
+
+            // Radar
+            const ctxRadar = document.getElementById('skillRadarChart').getContext('2d');
+            radarChart = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: ['IaC', 'CI/CD', 'Containers', 'Security', 'Network', 'Obs.'],
+                    datasets: [{
+                        label: 'Proficiency %',
+                        data: [0, 0, 0, 0, 0, 0],
+                        fill: true,
+                        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                        borderColor: 'rgb(79, 70, 229)',
+                        pointBackgroundColor: 'rgb(79, 70, 229)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(79, 70, 229)'
+                    },
+                    {
+                        label: 'Target',
+                        data: [100, 100, 100, 100, 100, 100],
+                        fill: false,
+                        borderColor: 'rgba(203, 213, 225, 0.5)',
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(226, 232, 240, 0.8)' },
+                            grid: { color: 'rgba(226, 232, 240, 0.8)' },
+                            pointLabels: {
+                                font: { size: 10, weight: 'bold' },
+                                color: '#64748b'
+                            },
+                            ticks: { display: false, max: 100 }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            updateStats();
+        }
+
+        // Start App
+        init();
+
+    </script>
+</body>
+</html>
